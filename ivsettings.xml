@@ -1,0 +1,14 @@
+<ivysettings>
+  <!-- Defines how dependences should be resolved.  By default, we use
+       the "ibiblio" resolver, which resolves dependencies from the
+       maven repository.  Other resolvers can be added here if some
+       libraries are not found in maven.  If we want to set up our own
+       repository so that we are not dependent on maven.org, we would
+       direct this file to point to our repository instead of
+       maven's. -->
+  <settings defaultResolver="ibiblio"/>
+  <caches defaultCacheDir="${ivy.settings.dir}/.ivycache"/>
+  <resolvers>
+    <ibiblio name="ibiblio" m2compatible="true" />
+  </resolvers>
+</ivysettings>

@@ -1,0 +1,71 @@
+<ivy-module version="2.0">
+  <info organisation="com.noteflight" module="tunnelingproxy">
+  </info>
+  <!-- ================================================== -->
+  <!-- These configurations are copied from the typical set of
+       configurations found in a maven central repository.  Packages
+       can specify different sets of resources and dependencies
+       depending on which configuration is requested.  In practice we
+       only use the "compile", "runtime", and "test" configurations.
+       These configurations allow us to split up our dependencies to
+       those that are needed at compile time, or runtime, or test time
+       -->
+  <configurations>
+	<conf name="default" visibility="public" extends="runtime,master"
+          description="runtime dependencies and master artifact can be used with this conf"/>
+	<conf name="master" visibility="public"
+          description="contains only the artifact published by this module itself, with no transitive dependencies"/>
+	<conf name="compile" visibility="public"
+          description="this is the default scope, used if none is specified. Compile dependencies are available in all classpaths."/>
+	<conf name="provided" visibility="public"
+          description="this is much like compile, but indicates you expect the JDK or a container to provide it. It is only available on the compilation classpath, and is not transitive."/>
+	<conf name="runtime" visibility="public" extends="compile"
+          description="this scope indicates that the dependency is not required for compilation, but is for execution. It is in the runtime and test classpaths, but not the compile classpath."/>
+	<conf name="test" visibility="private" extends="runtime"
+          description="this scope indicates that the dependency is not required for normal use of the application, and is only available for the test compilation and execution phases."/>
+	<conf name="system" visibility="public"
+          description="this scope is similar to provided except that you have to provide the JAR which contains it explicitly. The artifact is always available and is not looked up in a repository."/>
+	<conf name="sources" visibility="public"
+          description="this configuration contains the source artifact of this module, if any."/>
+	<conf name="javadoc" visibility="public"
+          description="this configuration contains the javadoc artifact of this module, if any."/>
+	<conf name="optional" visibility="public"
+          description="contains all optional dependencies"/>
+	<conf name="release" visibility="public"
+          description="this scope indicates that the dependency is included as part of the release."/>
+  </configurations>
+
+  <!-- ================================================== -->
+  <!-- Our project's dependencies - use
+       "conf="{configuration}->{dependency configuration}" to indicate
+       in which of the below configurations the dependency should
+       include (you can have multiple, separated by semicolons).  The
+       "{dependency configuration}" specifies what configuration
+       within the dependency should be used to resolve transitive
+       dependencies - usually it's just "default" -->
+  <dependencies>
+    <!-- JCommander command line parser -->
+    <dependency org="com.beust" name="jcommander" rev="1.48"
+                conf="compile->default"/>
+    <!-- Jetty embedded web server -->
+    <dependency org="org.eclipse.jetty" name="jetty-server" rev="9.3.6.v20151106"
+                conf="compile->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="9.3.6.v20151106"
+                conf="compile->default"/>
+
+    <!-- libraries that are to be included in the release -->
+    <dependency org="com.beust" name="jcommander" rev="1.48"
+                conf="release->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-server" rev="9.3.6.v20151106"
+                conf="compile->default"/>
+    <dependency org="org.eclipse.jetty" name="jetty-servlet" rev="9.3.6.v20151106"
+                conf="compile->default"/>
+
+    <!-- and ivy itself, to be cached for the "bootstrapping" process" -->
+    <dependency org="org.apache.ivy" name="ivy" rev="2.4.0"
+                conf="provided->default"/>
+  </dependencies>
+
+  <!-- ================================================== -->
+
+</ivy-module>

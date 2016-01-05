@@ -1,0 +1,148 @@
+<project name="tunnelingproxy.ivy"
+         xmlns:ivy="antlib:org.apache.ivy.ant"
+         >
+  <!-- This project uses ivy to retrieve its external library
+       dependencies from the maven.org repository.  Ivy handles the
+       mechanics of retrieving libraries from the maven repository,
+       recursively retrieving any of their dependencies, and setting
+       path variables to point to all of the appropriate resulting
+       ".jar" files.  Ivy also caches its downloads under ".ivycache"
+       (a .gitignore'd directory) so that if the build directory is
+       removed, the libraries can be "downloaded" quickly again from
+       the local cache on the next build.  If the ".ivycache"
+       directory is removed, then ivy will retrieve the libraries from
+       maven.  The ivy library itself is "bootstrapped" by loading it
+       from the .ivycache directory, or if not found there, directly
+       from maven using the ant "get" task.  As a result, no libraries
+       should need to be checked into source control, even the ivy
+       library itself.
+  -->
+  <property name="ivyDir" location="build/ivy"/>
+
+  <!-- Set the classpaths to the loaded libraries for the various configurations -->
+  <target name="ivy" depends="ivy-libs">
+    <path id="ivy.compile.classpath">
+      <fileset dir="${ivyDir}/compile">
+        <include name="**/*.jar" />
+      </fileset>
+    </path>
+    <path id="ivy.runtime.classpath">
+      <fileset dir="${ivyDir}/runtime">
+        <include name="**/*.jar" />
+      </fileset>
+    </path>
+    <path id="ivy.test.classpath">
+      <fileset dir="${ivyDir}/test">
+        <include name="**/*.jar" />
+      </fileset>
+    </path>
+  </target>
+
+  <!-- Load the dependencies specified in ivy.xml -->
+  <target name="ivy-libs" depends="ivy-ant-tasks,ivy-libs.checkuptodate"
+          unless="ivy-libs.uptodate">
+    <!-- Specifies where to load dependencies from (maven), and where
+         the cache directory is (.ivycache) -->
+    <ivy:configure file="ivysettings.xml"/>
+
+    <!-- Bring the dependencies into the ivy cache (typically
+         ~/.ivy2/cache) -->
+    <ivy:resolve file="ivy.xml"/>
+
+    <!-- Copy the dependencies from the ivy cache into our build/ivy
+         directory.  For each of the "configurations" we're interested
+         in, we retrieve the subset of files appropriate to that
+         configuration.  The configurations are specified in the
+         ivy.xml file. -->
+    <ivy:retrieve
+        pattern="${ivyDir}/compile/[artifact]-[revision](-[classifier]).[ext]"
+        conf="compile"/>
+    <ivy:retrieve
+        pattern="${ivyDir}/runtime/[artifact]-[revision](-[classifier]).[ext]"
+        conf="runtime"/>
+    <ivy:retrieve
+        pattern="${ivyDir}/test/[artifact]-[revision](-[classifier]).[ext]"
+        conf="test"/>
+    <ivy:retrieve
+        pattern="${ivyDir}/release/[artifact]-[revision](-[classifier]).[ext]"
+        conf="release"/>
+    <ivy:retrieve
+        pattern="${ivyDir}/javadoc/[artifact]-[revision](-[classifier]).[ext]"
+        conf="javadoc"/>
+    <touch file="${ivyDir}/ivy-libs.complete"/>
+  </target>
+  <target name="ivy-libs.checkuptodate">
+    <uptodate property="ivy-libs.uptodate"
+              srcfile="ivy.xml"
+              targetfile="${ivyDir}/ivy-libs.complete"/>
+  </target>
+
+  <!-- Add the ivy ant tasks -->
+  <target name="ivy-ant-tasks" depends="bootstrap-ivy">
+    <!-- Add the ivy bootstrap libraries to our path -->
+    <path id="ivy.lib.path">
+      <fileset dir="${ivyDir}" includes="*.jar"/>
+    </path>
+    <!-- Define the ivy ant tasks -->
+    <taskdef resource="org/apache/ivy/ant/antlib.xml"
+             uri="antlib:org.apache.ivy.ant"
+             classpathref="ivy.lib.path"
+             />
+  </target>
+
+  <!-- "Bootstrap" ivy by loading ivy.jar from .ivycache or from Maven
+       Central -->
+  <target name="bootstrap-ivy"
+          depends="bootstrap-ivy.checkuptodate"
+          unless="bootstrap-ivy.uptodate">
+    <property name="mavenUrl" value="https://repo1.maven.org/maven2/"/>
+    <property name="ivyVersion" value="2.4.0"/>
+    <mkdir dir="${ivyDir}"/>
+    <!-- Try loading from .ivycache first -->
+    <antcall target="copy-ivy"/>
+    <!-- Otherwise load from Maven Central -->
+    <antcall target="download-ivy"/>
+    <touch file="${ivyDir}/bootstrap-ivy.complete"/>
+  </target>
+  <target name="bootstrap-ivy.checkuptodate">
+    <uptodate property="bootstrap-ivy.uptodate"
+              srcfile="${ivyDir}/ivy.jar"
+              targetfile="${ivyDir}/bootstrap-ivy.complete"/>
+  </target>
+  <target name="copy-ivy" if="copy-ivy.available" depends="check-copy-ivy">
+    <copy file=".ivycache/org.apache.ivy/ivy/jars/ivy-${ivyVersion}.jar"
+          toFile="${ivyDir}/ivy.jar"/>
+  </target>
+  <target name="check-copy-ivy">
+    <available property="copy-ivy.available"
+               file=".ivycache/org.apache.ivy/ivy/jars/ivy-${ivyVersion}.jar"/>
+  </target>
+  <target name="download-ivy" unless="download-ivy.complete" depends="check-download-ivy">
+    <get src="${mavenUrl}org/apache/ivy/ivy/${ivyVersion}/ivy-${ivyVersion}.jar"
+         dest="${ivyDir}/ivy.jar"/>
+  </target>
+  <target name="check-download-ivy">
+    <available property="download-ivy.complete" file="${ivyDir}/ivy.jar"/>
+  </target>
+
+  <!-- javadoc for third party libraries -->
+  <target name="ivy-javadoc" depends="ivy" description="build javadoc for ivy-managed libraries">
+    <property name="ivyJavadocDir" location="${ivyDir}/javadoc"/>
+    <property name="ivyJavadocDest" location="build/ivy-javadoc"/>
+    <delete dir="${ivyJavadocDest}"/>
+    <macrodef name="unjarJavadoc">
+      <attribute name="jarName" description="The name of the jar file (minus the .jar)"/>
+      <sequential>
+        <mkdir dir="${ivyJavadocDest}/@{jarName}"/>
+        <unzip dest="${ivyJavadocDest}/@{jarName}"
+               src="${ivyJavadocDir}/@{jarName}.jar">
+        </unzip>
+      </sequential>
+    </macrodef>
+    <!-- Remember to add the appropriate declaration to ivy.xml and index.html -->
+    <unjarJavadoc jarName="jackson-core-2.5.3-javadoc"/>
+    <unjarJavadoc jarName="jackson-databind-2.5.3-javadoc"/>
+    <unjarJavadoc jarName="junit-4.12-javadoc"/>
+  </target>
+
+</project>

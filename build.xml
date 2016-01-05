@@ -1,0 +1,84 @@
+<project name="tunnelingproxy" default="build">
+  <!-- Use ivy to manage our external library dependencies and to set
+       up our classpaths -->
+  <import file="build-ivy.xml"/>
+  <target name="classpaths" depends="ivy"
+          description="Set up classpaths, including external libraries retrieved by ivy">
+    <path id="compile.classpath">
+      <path refid="ivy.compile.classpath"/>
+      <pathelement location="build/tunnelingproxy"/>
+    </path>
+    <path id="test.compile.classpath">
+      <path refid="ivy.compile.classpath"/>
+      <path refid="ivy.test.classpath"/>
+      <pathelement location="build/tunnelingproxy"/>
+    </path>
+    <path id="runtime.classpath">
+      <path refid="ivy.runtime.classpath"/>
+      <pathelement location="build/tunnelingproxy"/>
+    </path>
+    <path id="test.classpath">
+      <path refid="ivy.test.classpath"/>
+      <pathelement location="build/tunnelingproxy"/>
+      <pathelement location="build/tests"/>
+    </path>
+  </target>
+
+  <target name="clean" description="Clean the target directory">
+    <delete dir="build"/>
+  </target>
+  <target name="clean-ivycache" description="Clean the ivycache directory (where external ivy-managed libraries are kept so that &quot;ant clean&quot; doesn't force a re-download of all external libraries)">
+    <delete dir=".ivycache"/>
+  </target>
+  <target name="clean-all" depends="clean,clean-ivycache"/>
+
+  <target name="build" depends="build-java">
+  </target>
+
+  <target name="build-java" description="Build the java sources"
+          depends="classpaths">
+    <mkdir dir="build/tunnelingproxy"/>
+    <javac destdir="build/tunnelingproxy"
+           debug="true"
+           classpathref="compile.classpath"
+           includeAntRuntime="false"
+           source="1.8"
+           >
+      <compilerarg value="-Xlint:unchecked"/>
+      <src path="src/java"/>
+      <include name="**/*.java"/>
+    </javac>
+    <copy todir="build/tunnelingproxy">
+      <fileset dir="src/java" excludes="**/*.java"/>
+    </copy>
+  </target>
+
+  <target name="javadoc" description="Generate the javadoc for the project">
+    <javadoc destdir="build/javadoc">
+      <sourcepath>
+        <pathelement location="src/java"/>
+      </sourcepath>
+    </javadoc>
+  </target>
+
+  <target name="runproxy" depends="build">
+    <java classpathref="runtime.classpath"
+          classname="com.noteflight.tunnelingproxy.TunnelingProxy"
+          fork="true">
+      <arg value="8181"/>
+      <arg value="8182"/>
+    </java>
+  </target>
+
+  <target name="runagent" depends="build">
+    <java classpathref="runtime.classpath"
+          classname="com.noteflight.tunnelingproxy.TunnelingAgent"
+          fork="true">
+      <arg value="localhost"/>
+      <arg value="8182"/>
+      <arg value="public.localtest.com:8181"/>
+      <arg value="localhost"/>
+      <arg value="3000"/>
+    </java>
+  </target>
+</project>
