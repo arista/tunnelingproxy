@@ -65,7 +65,9 @@
     <java classpathref="runtime.classpath"
           classname="com.noteflight.tunnelingproxy.TunnelingProxy"
           fork="true">
+      <arg value="-httpPort"/>
       <arg value="8181"/>
+      <arg value="-agentPort"/>
       <arg value="8182"/>
     </java>
   </target>
@@ -74,10 +76,15 @@
     <java classpathref="runtime.classpath"
           classname="com.noteflight.tunnelingproxy.TunnelingAgent"
           fork="true">
+      <arg value="-proxyHost"/>
       <arg value="localhost"/>
+      <arg value="-proxyPort"/>
       <arg value="8182"/>
+      <arg value="-proxiedHostname"/>
       <arg value="public.localtest.com:8181"/>
+      <arg value="-originHost"/>
       <arg value="localhost"/>
+      <arg value="-originPort"/>
       <arg value="3000"/>
     </java>
   </target>
